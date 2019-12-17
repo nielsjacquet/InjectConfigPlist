@@ -26,9 +26,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"  ##Homedir
 toBeInjectedFolder="$DIR/toBeInjected"
 
 
-printf "${GREEN}drag and drop the config.Plist${NC}\n"
-read configPlist
-#configPlist="/Users/Niels/Dropbox/UCB/Scriptz/InjectConfigPlist/Config.plist"
+printf "${GREEN}drag and drop the file that you want to inject${NC}\n"
+read injectFile
+
+filecheck()
+{
+  injectFileExtention="${injectFile##*.}"
+}
+
+
 
 ipaCheck()
 {
@@ -69,18 +75,27 @@ unZip()
     unzip "$ogIpa" -d $DIR/$ogIpa                                                ##unzip the ipa in a temp folder
 }
 
-copyConfigPlist()
+copy()
 {
     printf "${GREEN}Copy the plist${NC}\n"
     # cd "$DIR/$ogIpa/Payload"
     cd $payloadFolder
-    # printf "${RED}DEBUGGING payloadFolder: $payloadFolder${NC}\n"
-    # printf "${RED}DEBUGGING ogIpa: $ogIpa${NC}\n"
-    # printf "${RED}DEBUGGING DIR: $DIR${NC}\n"
+    printf "${RED}DEBUGGING payloadFolder: $payloadFolder${NC}\n"
+    printf "${RED}DEBUGGING ogIpa: $ogIpa${NC}\n"
+    printf "${RED}DEBUGGING DIR: $DIR${NC}\n"
     payloadApp=$(ls | grep '.app')
-    #printf "${RED}DEBUGGING copyPlist payloadApp: $payloadApp ${NC}\n"
+    printf "${RED}DEBUGGING copyPlist payloadApp: $payloadApp ${NC}\n"
     cd "$payloadFolder/$payloadApp"
-    cp -v $configPlist $payloadFolder/$payloadApp/Config.plist
+    case $injectFileExtention in
+      plist )
+        echo file extention plist: .$injectFileExtention
+        cp -v "$injectFile" $payloadFolder/$payloadApp/Config.plist
+        ;;
+      p12 )
+      echo file extention p12: .$injectFileExtention
+      cp -v "$injectFile" $payloadFolder/$payloadApp/ClientCertificate.p12
+        ;;
+    esac
 }
 
 zipIpa()
@@ -99,10 +114,10 @@ folderCleanup()
 {
     rm -rf "$payloadFolder"
 }
-
+filecheck
 ipaCheck
 getOgIpa
 unZip
-copyConfigPlist
+copy
 zipIpa
 folderCleanup
