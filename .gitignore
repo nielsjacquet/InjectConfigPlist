@@ -1,4 +1,4 @@
-.zip
-.ipa
-.DS_Store/
+*.zip
+*.ipa
+*.DS_Store
 toBeInjected/
