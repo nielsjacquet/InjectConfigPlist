@@ -33,6 +33,7 @@ helpFunction()
   echo "Usage: $0 -i ipaPath -n injectFile"
   echo -e "\t-i ipaPath -- REQUIRED "
   echo -e "\t-n injectFile -- REQUIRED "
+  echo -e "\e-n endDate for ClientCertificate -- REQUIRED if file is .p12  and in format YYYYMMDD"
   exitProcedure # Exit script after printing help
 }
 
@@ -41,11 +42,12 @@ exitProcedure()
   exit 1
 }
 
-while getopts "i:?:h:n:" opt
+while getopts "i:?:h:n:e:" opt
 do
    case "$opt" in
       i ) ipaArg="$OPTARG" ;;               # Ipa path argument
       n ) injectFile="$OPTARG" ;;           # inject file
+      e ) endDate="$OPTARG" ;;              # Enddate for .p12
       ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
       h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
    esac
@@ -108,6 +110,8 @@ unZip()
 
 copy()
 {
+    injectNoExtention=$(echo "$(basename "${injectFile%??????}")")
+    printf "${BLUE}injecPlistNoExtention $injectNoExtention${NC}\n"
     printf "${GREEN}Copy the injectFile${NC}\n"
     cd $payloadFolder
     printf "${RED}DEBUGGING payloadFolder: $payloadFolder${NC}\n"
@@ -120,12 +124,13 @@ copy()
       plist )
         echo file extention plist: .$injectFileExtention
         cp -v "$injectFile" "$payloadFolder/$payloadApp/Config.plist"
-        injecPlistNoExtention=$(echo "$(basename "${injectFile%??????}")")
-        printf "${BLUE}injecPlistNoExtention $injecPlistNoExtention${NC}\n"
+        injectType=InjectedConfigPlist
         ;;
       p12 )
       echo file extention p12: .$injectFileExtention
       cp -v "$injectFile" $payloadFolder/$payloadApp/ClientCertificate.p12
+      injectType=InjectedClientCertificate
+      injectNoExtention=$endDate
         ;;
     esac
 }
@@ -133,8 +138,8 @@ copy()
 createDestinationFolder()
 {
   cd $DIR
-  destinationFolderName="$ogIpaNoExtention"_"$injecPlistNoExtention"
-  mkdir $destinationFolderName
+  destinationFolderName="$ogIpaNoExtention"_"$injectNoExtention"
+  mkdir "$destinationFolderName"
 }
 
 zipIpa()
@@ -145,7 +150,7 @@ zipIpa()
     find . -name ".DS_Store" -exec rm -rf {} +;
     cd $tempFolder
     printf "${GREEN} ogipaname: $ogIpa ${NC}\n"
-    zipIpaName="$ogIpaNoExtention"_Injectedconfig_"$injecPlistNoExtention".ipa
+    zipIpaName="$ogIpaNoExtention"_"$injectType"_"$injectNoExtention".ipa
     zip -r "$DIR/$destinationFolderName/$zipIpaName" ./Payload
 }
 
@@ -166,3 +171,6 @@ copy
 createDestinationFolder
 zipIpa
 cleanup
+
+##TODO
+#namig following the injected filetype
