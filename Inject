@@ -25,16 +25,40 @@ DBR()
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"  ##Homedir
 toBeInjectedFolder="$DIR/toBeInjected"
 
+helpFunction()
+{
+  echo ""
+  echo "Usage: $0 -i ipaPath -n injectFile"
+  echo -e "\t-i ipaPath -- REQUIRED "
+  echo -e "\t-n injectFile -- REQUIRED "
+  exitProcedure # Exit script after printing help
+}
 
-printf "${GREEN}drag and drop the file that you want to inject${NC}\n"
-read injectFile
+exitProcedure()
+{
+  exit 1
+}
+
+while getopts "i:?:h:n:" opt
+do
+   case "$opt" in
+      i ) ipaArg="$OPTARG" ;;               # Ipa path argument
+      n ) injectFile="$OPTARG" ;;           # inject file
+      ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
+      h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
+   esac
+done
+
+copyToInjectFolder()
+{
+  echo Copy the ipa to the to be exploded folder
+  cp "$ipaArg" "$toBeInjectedFolder"
+}
 
 filecheck()
 {
   injectFileExtention="${injectFile##*.}"
 }
-
-
 
 ipaCheck()
 {
@@ -65,20 +89,25 @@ getOgIpa()
       ogIpaNoExtention=$(echo "$(basename "$apps" .ipa)")
       printf "${YELLOW}The ipa that will be processed: ${GREEN}$ogIpa${NC}\n"
     done
-    payloadFolder="$DIR/$ogIpa/Payload"
+}
+
+renameDestinationFolder()
+{
+  ogIpaNoExtention="${ogIpa%????}"
+  printf "${BLUE}ogIpaNoExtention $ogIpaNoExtention ${NC}\n"
+  payloadFolder="$DIR/$ogIpaNoExtention/Payload"
 }
 
 unZip()
 {
     printf "${GREEN}Unzipping the ipa${NC}\n"
     cd $toBeInjectedFolder
-    unzip "$ogIpa" -d $DIR/$ogIpa                                                ##unzip the ipa in a temp folder
+    unzip "$ogIpa" -d $DIR/$ogIpaNoExtention                                                ##unzip the ipa in a temp folder
 }
 
 copy()
 {
     printf "${GREEN}Copy the plist${NC}\n"
-    # cd "$DIR/$ogIpa/Payload"
     cd $payloadFolder
     printf "${RED}DEBUGGING payloadFolder: $payloadFolder${NC}\n"
     printf "${RED}DEBUGGING ogIpa: $ogIpa${NC}\n"
@@ -90,6 +119,8 @@ copy()
       plist )
         echo file extention plist: .$injectFileExtention
         cp -v "$injectFile" $payloadFolder/$payloadApp/Config.plist
+        injecPlistNoExtention=$(echo "$(basename "${injectFile%??????}")") 
+        printf "${BLUE}injecPlistNoExtention $injecPlistNoExtention${NC}\n"
         ;;
       p12 )
       echo file extention p12: .$injectFileExtention
@@ -98,13 +129,14 @@ copy()
     esac
 }
 
+
 zipIpa()
 {
     printf "${GREEN}Zipping the payloadFolder${NC}\n"
     cd $payloadFolder
     echo payloadFolder $payloadFolder
     find . -name ".DS_Store" -exec rm -rf {} +;
-    cd $DIR/$ogIpa
+    cd $DIR/$ogIpaNoExtention
     printf "${GREEN} ogipaname: $ogIpa ${NC}\n"
     zipIpaName="$ogIpaNoExtention"_Injectedconfig.ipa
     zip -r "$zipIpaName" ./Payload
@@ -113,10 +145,14 @@ zipIpa()
 folderCleanup()
 {
     rm -rf "$payloadFolder"
+    rm "$toBeInjectedFolder/$ogIpa"
 }
+
+copyToInjectFolder
 filecheck
 ipaCheck
 getOgIpa
+renameDestinationFolder
 unZip
 copy
 zipIpa
