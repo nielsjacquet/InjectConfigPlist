@@ -167,6 +167,10 @@ cleanup()
     rm -rf "$toBeInjectedFolder/$ogIpa"
 }
 
+openFolder()
+{
+    open "$DIR"
+}
 
 copyToInjectFolder
 filecheck
@@ -178,3 +182,4 @@ copy
 createDestinationFolder
 zipIpa
 cleanup
+openFolder
