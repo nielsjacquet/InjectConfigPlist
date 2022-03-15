@@ -1,159 +1,193 @@
 #!/usr/bin/env bash
 
-##cosmetic functions and Variables
-##Colors
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-GREEN='\033[0;32m'
-NC='\033[0m'
-BLUE='\033[0;34m'
+## for debugging, remove all single #, double ## is used for documentation
+clear
+echo ".___            __               __    _________                _____.__                  .__  .__          __"
+echo "|   | ____     |__| ____   _____/  |_  \_   ___ \  ____   _____/ ____\__| ____     ______ |  | |__| _______/  |_ "
+echo "|   |/    \    |  |/ __ \_/ ___\   __\ /    \  \/ /  _ \ /    \   __\|  |/ ___\    \____ \|  | |  |/  ___/\   __\ "
+echo "|   |   |  \   |  \  ___/\  \___|  |   \     \___(  <_> )   |  \  |  |  / /_/  >   |  |_> >  |_|  |\___ \  |  |  "
+echo "|___|___|  /\__|  |\___  >\___  >__|    \______  /\____/|___|  /__|  |__\___  / /\ |   __/|____/__/____  > |__|"
+echo "         \/\______|    \/     \/               \/            \/        /_____/  \/ |__|                \/       "
 
-##Break function for readabillity
-BR()
+## Setting the homefolder
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
+
+
+cleanup()
 {
-  echo "  "
+  rm -rf "$tempFolder"
 }
 
-##DoubleBreak function for readabillity
-DBR()
+exitRoutine()
 {
-  echo " "
-  echo " "
-}
-
-##Paths
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"  ##Homedir
-toBeInjectedFolder="$DIR/toBeInjected"
-
-helpFunction()
-{
-  echo ""
-  echo "Usage: $0 -i ipaPath -n injectFile"
-  echo -e "\t-i ipaPath -- REQUIRED "
-  echo -e "\t-n injectFile -- REQUIRED "
-  exitProcedure # Exit script after printing help
-}
-
-exitProcedure()
-{
+  cleanup
   exit 1
 }
 
-while getopts "i:?:h:n:" opt
+helpFunction()
+{
+  clear
+  echo "Endpoint is specified in -a"
+  echo
+  echo "ipa file is specified in -i, The script is drag and drop friendly"
+  echo
+  echo "Define -e with (d)ev/(a)cc/(p)rod for the correct environment"
+  exitRoutine
+}
+
+## Define the aruments that can be used in the script
+while getopts "i:?:h:a:e:" opt
 do
    case "$opt" in
       i ) ipaArg="$OPTARG" ;;               # Ipa path argument
-      n ) injectFile="$OPTARG" ;;           # inject file
+      a ) apiArg="$OPTARG" ;;               # Api endpoint
+      e ) environmentArg="$OPTARG" ;;       # Define (d)ev/(a)cc/(p)rod
       ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
       h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
    esac
 done
 
-copyToInjectFolder()
-{
-  echo Copy the ipa to the to be exploded folder
-  cp "$ipaArg" "$toBeInjectedFolder"
-}
 
-filecheck()
+##test
+# ipaArg="/Users/UCB/Documents/UCB/Scriptz/ExplodeIpa/com.ucb.apps.myucb4me.dev_20211001.1 For Automation/com.ucb.apps.myucb4me.dev_20211001.1.ipa"
+# apiArg="kaka004"
+# environmentArg="d"
+checks()
 {
-  injectFileExtention="${injectFile##*.}"
-}
-
-ipaCheck()
-{
-  for toBeInjected in "$toBeInjectedFolder"/*
-    do
-      ipaFileExtentions="${toBeInjected##*.}"                     ##extract just the FileExtention without the dot
-      echo File to be Exploded: $toBeInjected
-      echo FileExtention: $ipaFileExtentions
-      if [ $ipaFileExtentions == "ipa" ]                            ##if the FileExtention equals ipa
-        then
-          amountOfIpas+=("$toBeInjected")                         ##put the file in an array
-          ipaArrayLength=${#amountOfIpas[@]}                        ##Get the array length for the next statement
-        fi
-    done
-  if [[ $ipaArrayLength < "1" ]]                                    ## if the array length is less than 1, exit the script
-   then
-    printf "${RED}no ipa present in the toBeInjectedFolder: $toBeInjectedFolder${NC}\n"
-    exit 113                                                        ##exit with code 113
+  echo
+  if [[ -z "$ipaArg"  ]] || [[ -z "$apiArg" ]] || [[ -z "$environmentArg" ]]
+  then
+  echo WRONG!
+  helpFunction
   fi
+  echo ipaArg: $ipaArg
+  echo apiArg: $apiArg
+  echo environmentArg: $environmentArg
 }
 
-getOgIpa()
+setVars()
 {
-    printf "${GREEN}Get the og app name${NC}\n"
-    for apps in "$toBeInjectedFolder"/*                                             ##for every file in the folder
-     do
-      ogIpa=$(echo "$(basename "$apps")")                                         ##Get the filename with extention
-      ogIpaNoExtention=$(echo "$(basename "$apps" .ipa)")
-      printf "${YELLOW}The ipa that will be processed: ${GREEN}$ogIpa${NC}\n"
-    done
+  echo "setting the variables"
+  echo "----"
+  fixDate=$(date +"%Y%m%d-%Hh%M")
+  tempFolder="$DIR/_TEMP"
+  toBeInjected="$DIR/toBeInjected"
+  destinationFolder="$DIR/InjectedFiles"
 }
 
-renameDestinationFolder()
+##copy and extract the ipa
+copyAndExtract()
 {
-  ogIpaNoExtention="${ogIpa%????}"
-  printf "${BLUE}ogIpaNoExtention $ogIpaNoExtention ${NC}\n"
-  payloadFolder="$DIR/$ogIpaNoExtention/Payload"
+  echo "copying and extrating the .ipa file"
+  echo "----"
+  cp "$ipaArg" "$toBeInjected"
+  cd "$toBeInjected"
+  ipa=$(ls | grep ".ipa")
+  unzip -qq "$ipa"
+  ipaNoIpa=$(echo ${ipa%????})
 }
 
-unZip()
+getApp()
 {
-    printf "${GREEN}Unzipping the ipa${NC}\n"
-    cd $toBeInjectedFolder
-    unzip "$ogIpa" -d $DIR/$ogIpaNoExtention                                                ##unzip the ipa in a temp folder
+  cd "$toBeInjected/Payload"
+  app=$(ls | grep ".app")
 }
 
-copy()
+getConfigPlist()
 {
-    printf "${GREEN}Copy the plist${NC}\n"
-    cd $payloadFolder
-    printf "${RED}DEBUGGING payloadFolder: $payloadFolder${NC}\n"
-    printf "${RED}DEBUGGING ogIpa: $ogIpa${NC}\n"
-    printf "${RED}DEBUGGING DIR: $DIR${NC}\n"
-    payloadApp=$(ls | grep '.app')
-    printf "${RED}DEBUGGING copyPlist payloadApp: $payloadApp ${NC}\n"
-    cd "$payloadFolder/$payloadApp"
-    case $injectFileExtention in
-      plist )
-        echo file extention plist: .$injectFileExtention
-        cp -v "$injectFile" $payloadFolder/$payloadApp/Config.plist
-        injecPlistNoExtention=$(echo "$(basename "${injectFile%??????}")") 
-        printf "${BLUE}injecPlistNoExtention $injecPlistNoExtention${NC}\n"
-        ;;
-      p12 )
-      echo file extention p12: .$injectFileExtention
-      cp -v "$injectFile" $payloadFolder/$payloadApp/ClientCertificate.p12
-        ;;
-    esac
+  cd "$toBeInjected/Payload/$app"
+  config=$(ls | grep "Config.plist")
+  # plutil -p $config
 }
 
-
-zipIpa()
+setNewValues()
 {
-    printf "${GREEN}Zipping the payloadFolder${NC}\n"
-    cd $payloadFolder
-    echo payloadFolder $payloadFolder
-    find . -name ".DS_Store" -exec rm -rf {} +;
-    cd $DIR/$ogIpaNoExtention
-    printf "${GREEN} ogipaname: $ogIpa ${NC}\n"
-    zipIpaName="$ogIpaNoExtention"_Injectedconfig.ipa
-    zip -r "$zipIpaName" ./Payload
+  echo "Calculating the new config values"
+  echo "----"
+  case $environmentArg in
+    d )
+    environment="DEV"
+    apiUrlValue="https://$apiArg-dev-api-mtls.my.ucb-dev.be"
+    apiTokenUrlValue="https://$apiArg-dev-token-mtls.my.ucb-dev.be"
+    apiSignalrOriginValue="https://$apiArg-dev-televisits.my.ucb-dev.be"
+    apiSignalrUrlValue="https://apis.ucb-apps.be/v1/dev-btpa-$apiArg-api"
+    notificationHubNameValue="ucb-anh-btpm-801"
+    notificationHubKeyNameValue="DefaultListenSharedAccessSignature"
+    notificationHubKeyValue="Rmp8z+65mKw+lpdkITudYNJctFDVPGAScg6SX2ggd+U="
+    notificationHubBaseAddressValue="https://ucb-nhn-btpm.servicebus.windows.net/ucb-anh-btpm-801"
+      ;;
+    a)
+    environment="ACC"
+    apiUrlValue="https://$apiArg-acc-api-mtls.my.ucb-acc.be"
+    apiTokenUrlValue="https://$apiArg-acc-token-mtls.my.ucb-acc.be"
+    apiSignalrOriginValue="https://$apiArg-acc-televisits.my.ucb-acc.be"
+    apiSignalrUrlValue="https://apis.ucb-apps.be/v1/acc-btpa-$apiArg-api"
+    notificationHubNameValue="ucb-anh-btpm-001"
+    notificationHubKeyNameValue="DefaultListenSharedAccessSignature"
+    notificationHubKeyValue="k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y="
+    notificationHubBaseAddressValue="https://ucb-nhn-btpm.servicebus.windows.net/ucb-anh-btpm-001"
+      ;;
+    p )
+    environment="PRD"
+    apiUrlValue="https://$apiArg-dev-api-mtls.my.ucb.com"
+    apiTokenUrlValue="https://$apiArg-dev-token-mtls.my.ucb.com"
+    apiSignalrOriginValue="https://$apiArg-televisits.my.ucb.com"
+    apiSignalrUrlValue="https://apis.ucb-apps.be/v1/btpa-$apiArg-api"
+    notificationHubNameValue="ucb-anh-btpm-001"
+    notificationHubKeyNameValue="DefaultListenSharedAccessSignature"
+    notificationHubKeyValue="k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y="
+    notificationHubBaseAddressValue="https://ucb-nhn-btpm.servicebus.windows.net/ucb-anh-btpm-001"
+      ;;
+  esac
 }
 
-folderCleanup()
+replaceValues()
 {
-    rm -rf "$payloadFolder"
-    rm "$toBeInjectedFolder/$ogIpa"
+  echo "Replacing the old config values"
+  echo "----"
+  plutil -replace apiUrl -string $apiUrlValue "$config"
+  plutil -replace apiTokenUrl -string $apiTokenUrlValue "$config"
+  plutil -replace apiSignalrOrigin -string $apiSignalrOriginValue "$config"
+  plutil -replace apiSignalrUrl -string $apiSignalrUrlValue "$config"
+  plutil -replace notificationHubName -string $notificationHubNameValue "$config"
+  plutil -replace notificationHubKeyName -string $notificationHubKeyNameValue "$config"
+  plutil -replace notificationHubKey -string $notificationHubKeyValue "$config"
+  plutil -replace notificationHubBaseAddress -string $notificationHubBaseAddressValue "$config"
+  # plutil -p "$config"
+  newConfig=$(cat "$config")
+  extractNewConfigName="$ipaNoIpa""_$apiArg""-$environment"".xml"
+  echo $newConfig >> "$destinationFolder/$extractNewConfigName"
+  plutil -convert xml1 "$destinationFolder/$extractNewConfigName"
 }
 
-copyToInjectFolder
-filecheck
-ipaCheck
-getOgIpa
-renameDestinationFolder
-unZip
-copy
-zipIpa
-folderCleanup
+zipAndName()
+{
+  echo "Zipping the new ipa with the new configs inside"
+  echo "----"
+  newipaName="$ipaNoIpa""_$apiArg""-$environment"".ipa"
+  cd "$toBeInjected"
+  zip -qq -r $newipaName ./Payload
+}
+
+moveAndClean()
+{
+  echo "Moving and clean all folders and files"
+  echo "----"
+  cd "$toBeInjected"
+  rm -rf Payload
+  rm $ipa
+  mv "$newipaName" "$destinationFolder/$newipaName"
+  open "$destinationFolder"
+}
+
+###-----------------------------------
+## calling the funtions
+checks
+setVars
+copyAndExtract
+getApp
+getConfigPlist
+setNewValues
+replaceValues
+zipAndName
+moveAndClean
