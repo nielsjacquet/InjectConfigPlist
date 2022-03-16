@@ -12,6 +12,9 @@ echo "         \/\______|    \/     \/               \/            \/        /__
 ## Setting the homefolder
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
 
+##load the config file
+##. /path/to/some.config
+. /$DIR/config.config
 
 cleanup()
 {
@@ -113,7 +116,7 @@ setNewValues()
     apiSignalrUrlValue="https://apis.ucb-apps.be/v1/dev-btpa-$apiArg-api"
     notificationHubNameValue="ucb-anh-btpm-801"
     notificationHubKeyNameValue="DefaultListenSharedAccessSignature"
-    notificationHubKeyValue="Rmp8z+65mKw+lpdkITudYNJctFDVPGAScg6SX2ggd+U="
+    notificationHubKeyValue=$notificationHubKeyValueDEV
     notificationHubBaseAddressValue="https://ucb-nhn-btpm.servicebus.windows.net/ucb-anh-btpm-801"
       ;;
     a)
@@ -124,7 +127,7 @@ setNewValues()
     apiSignalrUrlValue="https://apis.ucb-apps.be/v1/acc-btpa-$apiArg-api"
     notificationHubNameValue="ucb-anh-btpm-001"
     notificationHubKeyNameValue="DefaultListenSharedAccessSignature"
-    notificationHubKeyValue="k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y="
+    notificationHubKeyValue=$notificationHubKeyValuePRD
     notificationHubBaseAddressValue="https://ucb-nhn-btpm.servicebus.windows.net/ucb-anh-btpm-001"
       ;;
     p )
@@ -135,7 +138,7 @@ setNewValues()
     apiSignalrUrlValue="https://apis.ucb-apps.be/v1/btpa-$apiArg-api"
     notificationHubNameValue="ucb-anh-btpm-001"
     notificationHubKeyNameValue="DefaultListenSharedAccessSignature"
-    notificationHubKeyValue="k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y="
+    notificationHubKeyValue=$notificationHubKeyValuePRD
     notificationHubBaseAddressValue="https://ucb-nhn-btpm.servicebus.windows.net/ucb-anh-btpm-001"
       ;;
   esac
@@ -151,7 +154,7 @@ replaceValues()
   plutil -replace apiSignalrUrl -string $apiSignalrUrlValue "$config"
   plutil -replace notificationHubName -string $notificationHubNameValue "$config"
   plutil -replace notificationHubKeyName -string $notificationHubKeyNameValue "$config"
-  plutil -replace notificationHubKey -string $notificationHubKeyValue "$config"
+  plutil -replace notificationHubKey -string $notificationHubKeyValueDEV "$config"
   plutil -replace notificationHubBaseAddress -string $notificationHubBaseAddressValue "$config"
   # plutil -p "$config"
   newConfig=$(cat "$config")
@@ -182,12 +185,12 @@ moveAndClean()
 
 ###-----------------------------------
 ## calling the funtions
-checks
-setVars
-copyAndExtract
-getApp
-getConfigPlist
+# checks
+# setVars
+# copyAndExtract
+# getApp
+# getConfigPlist
 setNewValues
-replaceValues
-zipAndName
-moveAndClean
+# replaceValues
+# zipAndName
+# moveAndClean
