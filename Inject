@@ -50,11 +50,6 @@ do
    esac
 done
 
-
-##test
-# ipaArg="/Users/UCB/Documents/UCB/Scriptz/ExplodeIpa/com.ucb.apps.myucb4me.dev_20211001.1 For Automation/com.ucb.apps.myucb4me.dev_20211001.1.ipa"
-# apiArg="kaka004"
-# environmentArg="d"
 checks()
 {
   echo
@@ -185,12 +180,12 @@ moveAndClean()
 
 ###-----------------------------------
 ## calling the funtions
-# checks
-# setVars
-# copyAndExtract
-# getApp
-# getConfigPlist
+checks
+setVars
+copyAndExtract
+getApp
+getConfigPlist
 setNewValues
-# replaceValues
-# zipAndName
-# moveAndClean
+replaceValues
+zipAndName
+moveAndClean
