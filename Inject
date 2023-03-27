@@ -149,7 +149,7 @@ replaceValues()
   plutil -replace apiSignalrUrl -string $apiSignalrUrlValue "$config"
   plutil -replace notificationHubName -string $notificationHubNameValue "$config"
   plutil -replace notificationHubKeyName -string $notificationHubKeyNameValue "$config"
-  plutil -replace notificationHubKey -string $notificationHubKeyValueDEV "$config"
+  plutil -replace notificationHubKey -string $notificationHubKeyValue "$config"
   plutil -replace notificationHubBaseAddress -string $notificationHubBaseAddressValue "$config"
   # plutil -p "$config"
   newConfig=$(cat "$config")
